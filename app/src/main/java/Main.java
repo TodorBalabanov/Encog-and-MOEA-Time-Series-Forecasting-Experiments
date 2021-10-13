@@ -86,28 +86,33 @@ public class Main {
 
 		Propagation[] propagations = {
 				// TODO Cloning is not needed in real-time operational mode.
-				new Backpropagation((ContainsFlat) network.clone(), examples),
-				new ResilientPropagation((ContainsFlat) network.clone(),
+				new Backpropagation((BasicNetwork) network.clone(), examples),
+				new ResilientPropagation((BasicNetwork) network.clone(),
 						examples),
-				new QuickPropagation((ContainsFlat) network.clone(), examples),
-				new ScaledConjugateGradient((ContainsFlat) network.clone(),
+				new QuickPropagation((BasicNetwork) network.clone(), examples),
+				new ScaledConjugateGradient((BasicNetwork) network.clone(),
 						examples),
-				new ManhattanPropagation((ContainsFlat) network.clone(),
+				new ManhattanPropagation((BasicNetwork) network.clone(),
 						examples, PRNG.nextDouble())};
 
 		System.out.println("Experiment start.");
 		for (Propagation p : propagations) {
 			System.out.println("" + p.getClass().getName());
+			long loop = 0;
+			long second = 0;
+			long time = System.currentTimeMillis();
 			long start = System.currentTimeMillis();
-			for (int c = 0; c < 10; c++) {
-				while (System.currentTimeMillis() - start < 6000) {
-					p.iteration();
+			while (p.isTrainingDone() == false && System.currentTimeMillis()-start < 1*60*1000) {
+				loop++;
+				p.iteration();
+				if(System.currentTimeMillis()-time > 1000) {
+					second++;
+					System.out.println(second + "\t" + loop + "\t" + p.getError());
+					time = System.currentTimeMillis();
 				}
-				System.out.println("" + p.getError());
 			}
 			p.finishTraining();
 		}
 		System.out.println("Experiment end.");
 	}
-
 }
