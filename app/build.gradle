@@ -24,6 +24,8 @@ repositories {
 
 dependencies {
     implementation group: 'org.encog', name: 'encog-core', version: '3.4'
+    
+    implementation group: 'org.moeaframework', name: 'moeaframework', version: '2.13'
 }
 
 application {
