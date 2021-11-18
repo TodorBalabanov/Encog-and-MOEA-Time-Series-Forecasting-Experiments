@@ -1,3 +1,4 @@
+import java.io.NotSerializableException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -75,7 +76,7 @@ public class Main {
 			Solution solution = new Solution(best.length, 1, 0);
 
 			for (int i = 0; i < best.length; i++) {
-				solution.setVariable(i, new RealVariable(best[i],
+				solution.setVariable(i, new RealVariable(best[i]+PRNG.nextDouble()-0.5D,
 						-Double.MAX_VALUE + 1, Double.MAX_VALUE - 1));
 			}
 
@@ -269,9 +270,9 @@ public class Main {
 
 	private static void moea() {
 		int populationSize = 37;
-		double crossoverRate = 0.9;
+		double crossoverRate = 0.95;
 		double mutationRate = 0.01;
-		double scalingFactor = 0.5;
+		double scalingFactor = 0.95;
 		long optimizationTimeout = 60_000;
 
 		for (int numberOfSineFunctions = 0; numberOfSineFunctions < 10; numberOfSineFunctions++) {
@@ -300,16 +301,16 @@ public class Main {
 //					new EvolutionStrategy(problem, comparator, initialization,
 //							new SelfAdaptiveNormalVariation()),
 
-					new GeneticAlgorithm(problem, comparator, initialization,
-							selections[PRNG.nextInt(selections.length)],
-							new GAVariation(new UniformCrossover(crossoverRate),
-									new Insertion(mutationRate))),
+//					new GeneticAlgorithm(problem, comparator, initialization,
+//							selections[PRNG.nextInt(selections.length)],
+//							new GAVariation(new UniformCrossover(crossoverRate),
+//									new Insertion(mutationRate))),
 
-//					new DifferentialEvolution(problem, comparator,
-//							initialization,
-//							new DifferentialEvolutionSelection(),
-//							new DifferentialEvolutionVariation(crossoverRate,
-//									scalingFactor))
+					new DifferentialEvolution(problem, comparator,
+							initialization,
+							new DifferentialEvolutionSelection(),
+							new DifferentialEvolutionVariation(crossoverRate,
+									scalingFactor))
 					
 			};
 
@@ -321,6 +322,8 @@ public class Main {
 					algorithm.step();
 
 					System.out.print(System.currentTimeMillis());
+					System.out.print("\t");
+					System.out.print(algorithm.getNumberOfEvaluations());
 					System.out.print("\t");
 					System.out.print(numberOfSineFunctions);
 					System.out.print("\t");
