@@ -53,7 +53,7 @@ public class Main {
 
 		@Override
 		public void evaluate(Solution solution) {
-			double result = 1;
+			double sum = 0;
 
 			double[] coefficients = EncodingUtils.getReal(solution);
 
@@ -65,10 +65,10 @@ public class Main {
 							.sin(coefficients[k + 1] * x + coefficients[k + 2]);
 				}
 
-				result += (y - values[x]) * (y - values[x]);
+				sum += (y - values[x]) * (y - values[x]);
 			}
 
-			solution.setObjective(0, Math.sqrt(result));
+			solution.setObjective(0, Math.sqrt(sum/values.length));
 		}
 
 		@Override
@@ -269,11 +269,12 @@ public class Main {
 	}
 
 	private static void moea() {
-		int populationSize = 37;
+		int populationSize = 137;
 		double crossoverRate = 0.95;
-		double mutationRate = 0.01;
+		double mutationRate = 0.05;
 		double scalingFactor = 0.95;
-		long optimizationTimeout = 60_000;
+		long optimizationTimeout = 10_000;
+		long printTimeout = 100;
 
 		for (int numberOfSineFunctions = 0; numberOfSineFunctions < 10; numberOfSineFunctions++) {
 			double[] old = best;
@@ -301,26 +302,31 @@ public class Main {
 //					new EvolutionStrategy(problem, comparator, initialization,
 //							new SelfAdaptiveNormalVariation()),
 
-//					new GeneticAlgorithm(problem, comparator, initialization,
-//							selections[PRNG.nextInt(selections.length)],
-//							new GAVariation(new UniformCrossover(crossoverRate),
-//									new Insertion(mutationRate))),
+					new GeneticAlgorithm(problem, comparator, initialization,
+							selections[PRNG.nextInt(selections.length)],
+							new GAVariation(new UniformCrossover(crossoverRate),
+									new Insertion(mutationRate))),
 
-					new DifferentialEvolution(problem, comparator,
-							initialization,
-							new DifferentialEvolutionSelection(),
-							new DifferentialEvolutionVariation(crossoverRate,
-									scalingFactor))
+//					new DifferentialEvolution(problem, comparator,
+//							initialization,
+//							new DifferentialEvolutionSelection(),
+//							new DifferentialEvolutionVariation(crossoverRate,
+//									scalingFactor))
 					
 			};
 
 			for (AbstractAlgorithm algorithm : algorithms) {
 				System.out.println(algorithm.getClass().getName());
 
+				long print = System.currentTimeMillis()-printTimeout;
 				long stop = System.currentTimeMillis() + optimizationTimeout;
 				while (System.currentTimeMillis() < stop) {
 					algorithm.step();
 
+					if(print > System.currentTimeMillis()) {
+						continue;
+					}
+					
 					System.out.print(System.currentTimeMillis());
 					System.out.print("\t");
 					System.out.print(algorithm.getNumberOfEvaluations());
@@ -333,6 +339,8 @@ public class Main {
 					System.out.print(Arrays.toString(EncodingUtils
 							.getReal(algorithm.getResult().get(0))));
 					System.out.print("\n");
+					
+					print = System.currentTimeMillis()+printTimeout;
 				}
 
 				best = EncodingUtils.getReal(algorithm.getResult().get(0));
