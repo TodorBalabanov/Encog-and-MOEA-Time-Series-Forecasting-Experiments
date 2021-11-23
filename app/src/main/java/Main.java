@@ -74,7 +74,7 @@ public class Main {
 				sum += (y - values[x]) * (y - values[x]);
 			}
 
-			solution.setObjective(0, Math.sqrt(sum/values.length));
+			solution.setObjective(0, Math.sqrt(sum / values.length));
 		}
 
 		@Override
@@ -82,8 +82,10 @@ public class Main {
 			Solution solution = new Solution(best.length, 1, 0);
 
 			for (int i = 0; i < best.length; i++) {
-				solution.setVariable(i, new RealVariable(best[i]+(PRNG.nextDouble()-0.5D),
-						-(Double.MAX_VALUE/2D), +(Double.MAX_VALUE/2D)));
+				solution.setVariable(i,
+						new RealVariable(best[i] + (PRNG.nextDouble() - 0.5D),
+								-(Double.MAX_VALUE / 2D),
+								+(Double.MAX_VALUE / 2D)));
 			}
 
 			return solution;
@@ -301,52 +303,51 @@ public class Main {
 			Initialization initialization = new InjectedInitialization(problem,
 					populationSize, solutions);
 
-			Selection[] selections = {
-				new TournamentSelection(),
-//				new UniformSelection(),
-//				new DifferentialEvolutionSelection(),
+			Selection[] selections = {new TournamentSelection(),
+					// new UniformSelection(),
+					// new DifferentialEvolutionSelection(),
 			};
 
-			Variation[] mutations = {
-				new UM(mutationRate),
-//				new BitFlip(mutationRate), 
+			Variation[] mutations = {new UM(mutationRate),
+					// new BitFlip(mutationRate),
 			};
 
-			Variation[] crossovers = {
-				new UniformCrossover(crossoverRate),
-//				new HUX(crossoverRate), 
+			Variation[] crossovers = {new UniformCrossover(crossoverRate),
+					// new HUX(crossoverRate),
 			};
-			
+
 			AbstractAlgorithm[] algorithms = {
-					
-					new EvolutionStrategy(problem, comparator, initialization,
-							new SelfAdaptiveNormalVariation()),
 
-//					new GeneticAlgorithm(problem, comparator, initialization,
-//							selections[PRNG.nextInt(selections.length)],
-//							new GAVariation(crossovers[PRNG.nextInt(crossovers.length)],
-//									mutations[PRNG.nextInt(mutations.length)])),
+					// new EvolutionStrategy(problem, comparator,
+					// initialization,
+					// new SelfAdaptiveNormalVariation()),
 
-//					new DifferentialEvolution(problem, comparator,
-//							initialization,
-//							new DifferentialEvolutionSelection(),
-//							new DifferentialEvolutionVariation(crossoverRate,
-//									scalingFactor)),
-					
+					// new GeneticAlgorithm(problem, comparator, initialization,
+					// selections[PRNG.nextInt(selections.length)],
+					// new
+					// GAVariation(crossovers[PRNG.nextInt(crossovers.length)],
+					// mutations[PRNG.nextInt(mutations.length)])),
+
+					new DifferentialEvolution(problem, comparator,
+							initialization,
+							new DifferentialEvolutionSelection(),
+							new DifferentialEvolutionVariation(crossoverRate,
+									scalingFactor)),
+
 			};
 
 			for (AbstractAlgorithm algorithm : algorithms) {
 				System.out.println(algorithm.getClass().getName());
 
-				long print = System.currentTimeMillis()-printTimeout;
+				long print = System.currentTimeMillis() - printTimeout;
 				long stop = System.currentTimeMillis() + optimizationTimeout;
 				while (System.currentTimeMillis() < stop) {
 					algorithm.step();
 
-					if(print > System.currentTimeMillis()) {
+					if (print > System.currentTimeMillis()) {
 						continue;
 					}
-					
+
 					System.out.print(System.currentTimeMillis());
 					System.out.print("\t");
 					System.out.print(algorithm.getNumberOfEvaluations());
@@ -359,8 +360,8 @@ public class Main {
 					System.out.print(Arrays.toString(EncodingUtils
 							.getReal(algorithm.getResult().get(0))));
 					System.out.print("\n");
-					
-					print = System.currentTimeMillis()+printTimeout;
+
+					print = System.currentTimeMillis() + printTimeout;
 				}
 
 				best = EncodingUtils.getReal(algorithm.getResult().get(0));
