@@ -16,6 +16,8 @@ import org.encog.neural.networks.training.propagation.quick.QuickPropagation;
 import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 import org.encog.neural.networks.training.propagation.scg.ScaledConjugateGradient;
 import org.moeaframework.algorithm.AbstractAlgorithm;
+import org.moeaframework.algorithm.PESA2;
+import org.moeaframework.algorithm.PESA2.RegionBasedSelection;
 import org.moeaframework.algorithm.single.AggregateObjectiveComparator;
 import org.moeaframework.algorithm.single.DifferentialEvolution;
 import org.moeaframework.algorithm.single.EvolutionStrategy;
@@ -26,14 +28,18 @@ import org.moeaframework.core.Initialization;
 import org.moeaframework.core.Problem;
 import org.moeaframework.core.Selection;
 import org.moeaframework.core.Solution;
+import org.moeaframework.core.Variation;
 import org.moeaframework.core.operator.GAVariation;
 import org.moeaframework.core.operator.InjectedInitialization;
 import org.moeaframework.core.operator.TournamentSelection;
 import org.moeaframework.core.operator.UniformCrossover;
 import org.moeaframework.core.operator.UniformSelection;
+import org.moeaframework.core.operator.binary.BitFlip;
+import org.moeaframework.core.operator.binary.HUX;
 import org.moeaframework.core.operator.permutation.Insertion;
 import org.moeaframework.core.operator.real.DifferentialEvolutionSelection;
 import org.moeaframework.core.operator.real.DifferentialEvolutionVariation;
+import org.moeaframework.core.operator.real.UM;
 import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
@@ -76,8 +82,8 @@ public class Main {
 			Solution solution = new Solution(best.length, 1, 0);
 
 			for (int i = 0; i < best.length; i++) {
-				solution.setVariable(i, new RealVariable(best[i]+PRNG.nextDouble()-0.5D,
-						-Double.MAX_VALUE + 1, Double.MAX_VALUE - 1));
+				solution.setVariable(i, new RealVariable(best[i]+(PRNG.nextDouble()-0.5D),
+						-(Double.MAX_VALUE/2D), +(Double.MAX_VALUE/2D)));
 			}
 
 			return solution;
@@ -271,7 +277,7 @@ public class Main {
 	private static void moea() {
 		int populationSize = 137;
 		double crossoverRate = 0.95;
-		double mutationRate = 0.05;
+		double mutationRate = 0.01;
 		double scalingFactor = 0.95;
 		long optimizationTimeout = 10_000;
 		long printTimeout = 100;
@@ -295,23 +301,37 @@ public class Main {
 			Initialization initialization = new InjectedInitialization(problem,
 					populationSize, solutions);
 
-			Selection[] selections = {new TournamentSelection(),
-					new UniformSelection()};
+			Selection[] selections = {
+				new TournamentSelection(),
+//				new UniformSelection(),
+//				new DifferentialEvolutionSelection(),
+			};
+
+			Variation[] mutations = {
+				new UM(mutationRate),
+//				new BitFlip(mutationRate), 
+			};
+
+			Variation[] crossovers = {
+				new UniformCrossover(crossoverRate),
+//				new HUX(crossoverRate), 
+			};
+			
 			AbstractAlgorithm[] algorithms = {
 					
-//					new EvolutionStrategy(problem, comparator, initialization,
-//							new SelfAdaptiveNormalVariation()),
+					new EvolutionStrategy(problem, comparator, initialization,
+							new SelfAdaptiveNormalVariation()),
 
-					new GeneticAlgorithm(problem, comparator, initialization,
-							selections[PRNG.nextInt(selections.length)],
-							new GAVariation(new UniformCrossover(crossoverRate),
-									new Insertion(mutationRate))),
+//					new GeneticAlgorithm(problem, comparator, initialization,
+//							selections[PRNG.nextInt(selections.length)],
+//							new GAVariation(crossovers[PRNG.nextInt(crossovers.length)],
+//									mutations[PRNG.nextInt(mutations.length)])),
 
 //					new DifferentialEvolution(problem, comparator,
 //							initialization,
 //							new DifferentialEvolutionSelection(),
 //							new DifferentialEvolutionVariation(crossoverRate,
-//									scalingFactor))
+//									scalingFactor)),
 					
 			};
 

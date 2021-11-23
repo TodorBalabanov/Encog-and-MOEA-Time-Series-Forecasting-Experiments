@@ -18,8 +18,8 @@ plugins {
 }
 
 repositories {
-    // Use JCenter for resolving dependencies.
-    jcenter()
+    // Use Maven Center for resolving dependencies.
+    mavenCentral()
 }
 
 dependencies {
@@ -30,5 +30,5 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClassName = 'Main'
+    mainClass.set('Main')
 }
