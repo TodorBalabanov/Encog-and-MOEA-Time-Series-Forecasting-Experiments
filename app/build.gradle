@@ -26,6 +26,8 @@ dependencies {
     implementation group: 'org.encog', name: 'encog-core', version: '3.4'
     
     implementation group: 'org.moeaframework', name: 'moeaframework', version: '2.13'
+
+	implementation group: 'io.jenetics', name: 'jenetics', version: '7.0.0'
 }
 
 application {

@@ -1,4 +1,5 @@
 import java.io.NotSerializableException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +33,7 @@ import org.moeaframework.core.Variation;
 import org.moeaframework.core.operator.GAVariation;
 import org.moeaframework.core.operator.InjectedInitialization;
 import org.moeaframework.core.operator.TournamentSelection;
-import org.moeaframework.core.operator.UniformCrossover;
+//import org.moeaframework.core.operator.UniformCrossover;
 import org.moeaframework.core.operator.UniformSelection;
 import org.moeaframework.core.operator.binary.BitFlip;
 import org.moeaframework.core.operator.binary.HUX;
@@ -43,16 +44,33 @@ import org.moeaframework.core.operator.real.UM;
 import org.moeaframework.core.variable.EncodingUtils;
 import org.moeaframework.core.variable.RealVariable;
 import org.moeaframework.problem.AbstractProblem;
+import io.jenetics.Mutator;
+import io.jenetics.Optimize;
+import io.jenetics.Genotype;
+import io.jenetics.Phenotype;
+import io.jenetics.DoubleGene;
+import io.jenetics.MeanAlterer;
+import io.jenetics.TournamentSelector;
+import io.jenetics.DoubleChromosome;
+//import io.jenetics.UniformCrossover;
+import io.jenetics.engine.Limits;
+import io.jenetics.engine.Codecs;
+import io.jenetics.engine.Engine;
+import io.jenetics.engine.EvolutionResult;
+import io.jenetics.engine.EvolutionStatistics;
+import io.jenetics.util.DoubleRange;
 
 public class Main {
-	private static class NonlinearRegressionProblem extends AbstractProblem {
+	private static class MoeaNonlinearRegressionProblem
+			extends
+				AbstractProblem {
 
-		public NonlinearRegressionProblem(int numberOfVariables,
+		public MoeaNonlinearRegressionProblem(int numberOfVariables,
 				int numberOfObjectives, int numberOfConstraints) {
 			super(numberOfVariables, numberOfObjectives, numberOfConstraints);
 		}
 
-		public NonlinearRegressionProblem(int numberOfVariables,
+		public MoeaNonlinearRegressionProblem(int numberOfVariables,
 				int numberOfObjectives) {
 			super(numberOfVariables, numberOfObjectives);
 		}
@@ -84,15 +102,53 @@ public class Main {
 			for (int i = 0; i < best.length; i++) {
 				solution.setVariable(i,
 						new RealVariable(best[i] + (PRNG.nextDouble() - 0.5D),
-								-(Double.MAX_VALUE / 2D),
-								+(Double.MAX_VALUE / 2D)));
+								MIN_RANGE, MAX_RANGE));
 			}
 
 			return solution;
 		}
 	}
 
+	private static class JeneticsNonlinearRegressionProblem {
+		public static double evaluate(double[] coefficients) {
+			double sum = 0;
+
+			for (int x = 0; x < values.length; x++) {
+				double y = coefficients[0] * x + coefficients[1];
+
+				for (int k = 2; k < coefficients.length; k += 3) {
+					y += coefficients[k] * Math
+							.sin(coefficients[k + 1] * x + coefficients[k + 2]);
+				}
+
+				sum += (y - values[x]) * (y - values[x]);
+			}
+
+			return Math.sqrt(sum / values.length);
+		}
+	}
+
 	private static final Random PRNG = new Random();
+
+	private static final long OPTIMIZATION_TIMEOUT = 60_000;
+
+	private static final long PRINT_TIMEOUT = 1000;
+
+	private static final double MIN_RANGE = -100_000;
+
+	private static final double MAX_RANGE = +100_000;
+
+	private static final int MIN_SIN_FUNCTIONS = 9;
+
+	private static final int MAX_SIN_FUNCTIONS = 9;
+
+	private static final int POPULATION_SIZE = 137;
+
+	private static final double CROSSOVER_RATE = 0.95;
+
+	private static final double MUTATION_RATE = 0.01;
+
+	private static final double SCALING_FACTOR = 0.95;
 
 	private static final double[] SIN = {0.998334166468282, 1.98669330795061,
 			2.9552020666134, 3.89418342308651, 4.79425538604203,
@@ -277,42 +333,42 @@ public class Main {
 	}
 
 	private static void moea() {
-		int populationSize = 137;
-		double crossoverRate = 0.95;
-		double mutationRate = 0.01;
-		double scalingFactor = 0.95;
-		long optimizationTimeout = 10_000;
-		long printTimeout = 100;
-
-		for (int numberOfSineFunctions = 0; numberOfSineFunctions < 10; numberOfSineFunctions++) {
+		for (int numberOfSineFunctions = MIN_SIN_FUNCTIONS; numberOfSineFunctions < (MAX_SIN_FUNCTIONS
+				+ 1); numberOfSineFunctions++) {
 			double[] old = best;
 			best = new double[2 + 3 * numberOfSineFunctions];
 			for (int i = 0; i < old.length; i++) {
 				best[i] = old[i];
 			}
+			for (int i = old.length; i < best.length; i++) {
+				best[i] = PRNG.nextDouble() - 0.5D;
+			}
 
-			Problem problem = new NonlinearRegressionProblem(best.length, 1);
+			Problem problem = new MoeaNonlinearRegressionProblem(best.length,
+					1);
 
 			List<Solution> solutions = new ArrayList<>();
-			for (int i = 0; i < populationSize; i++) {
+			for (int i = 0; i < POPULATION_SIZE; i++) {
 				Solution solution = problem.newSolution();
 				solutions.add(solution);
 			}
 
 			AggregateObjectiveComparator comparator = new LinearDominanceComparator();
 			Initialization initialization = new InjectedInitialization(problem,
-					populationSize, solutions);
+					POPULATION_SIZE, solutions);
 
 			Selection[] selections = {new TournamentSelection(),
 					// new UniformSelection(),
 					// new DifferentialEvolutionSelection(),
 			};
 
-			Variation[] mutations = {new UM(mutationRate),
+			Variation[] mutations = {new UM(MUTATION_RATE),
 					// new BitFlip(mutationRate),
 			};
 
-			Variation[] crossovers = {new UniformCrossover(crossoverRate),
+			Variation[] crossovers = {
+					new org.moeaframework.core.operator.UniformCrossover(
+							CROSSOVER_RATE),
 					// new HUX(crossoverRate),
 			};
 
@@ -322,25 +378,25 @@ public class Main {
 					// initialization,
 					// new SelfAdaptiveNormalVariation()),
 
-					// new GeneticAlgorithm(problem, comparator, initialization,
-					// selections[PRNG.nextInt(selections.length)],
-					// new
-					// GAVariation(crossovers[PRNG.nextInt(crossovers.length)],
-					// mutations[PRNG.nextInt(mutations.length)])),
+					new GeneticAlgorithm(problem, comparator, initialization,
+							selections[PRNG.nextInt(selections.length)],
+							new GAVariation(
+									crossovers[PRNG.nextInt(crossovers.length)],
+									mutations[PRNG.nextInt(mutations.length)])),
 
-					new DifferentialEvolution(problem, comparator,
-							initialization,
-							new DifferentialEvolutionSelection(),
-							new DifferentialEvolutionVariation(crossoverRate,
-									scalingFactor)),
+					// new DifferentialEvolution(problem, comparator,
+					// initialization,
+					// new DifferentialEvolutionSelection(),
+					// new DifferentialEvolutionVariation(crossoverRate,
+					// scalingFactor)),
 
 			};
 
 			for (AbstractAlgorithm algorithm : algorithms) {
 				System.out.println(algorithm.getClass().getName());
 
-				long print = System.currentTimeMillis() - printTimeout;
-				long stop = System.currentTimeMillis() + optimizationTimeout;
+				long print = System.currentTimeMillis() - PRINT_TIMEOUT;
+				long stop = System.currentTimeMillis() + OPTIMIZATION_TIMEOUT;
 				while (System.currentTimeMillis() < stop) {
 					algorithm.step();
 
@@ -361,7 +417,7 @@ public class Main {
 							.getReal(algorithm.getResult().get(0))));
 					System.out.print("\n");
 
-					print = System.currentTimeMillis() + printTimeout;
+					print = System.currentTimeMillis() + PRINT_TIMEOUT;
 				}
 
 				best = EncodingUtils.getReal(algorithm.getResult().get(0));
@@ -369,8 +425,66 @@ public class Main {
 		}
 	}
 
+	private static void jenetics() {
+		for (int numberOfSineFunctions = MIN_SIN_FUNCTIONS; numberOfSineFunctions < (MAX_SIN_FUNCTIONS
+				+ 1); numberOfSineFunctions++) {
+			double[] old = best;
+			best = new double[2 + 3 * numberOfSineFunctions];
+			for (int i = 0; i < old.length; i++) {
+				best[i] = old[i];
+			}
+			for (int i = old.length; i < best.length; i++) {
+				best[i] = PRNG.nextDouble() - 0.5D;
+			}
+
+			Engine<DoubleGene, Double> engine = Engine
+					.builder(JeneticsNonlinearRegressionProblem::evaluate,
+							Codecs.ofVector(
+									DoubleRange.of(MIN_RANGE, MAX_RANGE),
+									best.length))
+					.populationSize(POPULATION_SIZE)
+					.survivorsSelector(new TournamentSelector<>())
+					.offspringSelector(new TournamentSelector<>())
+					.optimize(Optimize.MINIMUM)
+					.alterers(new Mutator<>(MUTATION_RATE),
+							new io.jenetics.UniformCrossover<>(CROSSOVER_RATE))
+					.build();
+
+			EvolutionStatistics<Double, ?> statistics = EvolutionStatistics
+					.ofNumber();
+
+			long stop = System.currentTimeMillis() + OPTIMIZATION_TIMEOUT;
+			while (System.currentTimeMillis() < stop) {
+				Phenotype<DoubleGene, Double> found = engine.stream()
+						.limit(Limits.byExecutionTime(
+								Duration.ofMillis(PRINT_TIMEOUT)))
+						.peek(statistics)
+						.collect(EvolutionResult.toBestPhenotype());
+
+				// System.out.println(statistics);
+				// System.out.println(found);
+				// System.out.println();
+				//
+				System.out.print(System.currentTimeMillis());
+				System.out.print("\t");
+				System.out.print(statistics.evaluationDuration().count());
+				System.out.print("\t");
+				System.out.print(numberOfSineFunctions);
+				System.out.print("\t");
+				System.out.print(found.fitness());
+				System.out.print("\t");
+				System.out.print(found.genotype().chromosome());
+				System.out.print("\n");
+
+				// best = EncodingUtils.getReal(algorithm.getResult().get(0));
+			}
+
+		}
+	}
+
 	public static void main(String[] args) {
 		// encog();
 		moea();
+		jenetics();
 	}
 }
