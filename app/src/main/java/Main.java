@@ -51,6 +51,8 @@ import io.jenetics.Phenotype;
 import io.jenetics.DoubleGene;
 import io.jenetics.MeanAlterer;
 import io.jenetics.TournamentSelector;
+import io.jenetics.RouletteWheelSelector;
+import io.jenetics.EliteSelector;
 import io.jenetics.DoubleChromosome;
 //import io.jenetics.UniformCrossover;
 import io.jenetics.engine.Limits;
@@ -443,8 +445,8 @@ public class Main {
 									DoubleRange.of(MIN_RANGE, MAX_RANGE),
 									best.length))
 					.populationSize(POPULATION_SIZE)
-					.survivorsSelector(new TournamentSelector<>())
-					.offspringSelector(new TournamentSelector<>())
+					.survivorsSelector(new TournamentSelector<>(5))
+					.offspringSelector(new EliteSelector<>(3, new TournamentSelector<DoubleGene, Double>(3)))
 					.optimize(Optimize.MINIMUM)
 					.alterers(new Mutator<>(MUTATION_RATE),
 							new io.jenetics.UniformCrossover<>(CROSSOVER_RATE))
@@ -460,7 +462,7 @@ public class Main {
 								.byExecutionTime(Duration.ofMillis(timeout)))
 						.peek(statistics)
 						.collect(EvolutionResult.toBestPhenotype());
-
+				
 				System.out.print(System.currentTimeMillis());
 				System.out.print("\t");
 				System.out.print(statistics.evaluationDuration().count());
