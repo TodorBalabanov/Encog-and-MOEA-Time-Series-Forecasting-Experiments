@@ -454,17 +454,13 @@ public class Main {
 					.ofNumber();
 
 			long stop = System.currentTimeMillis() + OPTIMIZATION_TIMEOUT;
-			while (System.currentTimeMillis() < stop) {
+			for (long timeout = PRINT_TIMEOUT; timeout < OPTIMIZATION_TIMEOUT; timeout += PRINT_TIMEOUT) {
 				Phenotype<DoubleGene, Double> found = engine.stream()
-						.limit(Limits.byExecutionTime(
-								Duration.ofMillis(PRINT_TIMEOUT)))
+						.limit(Limits
+								.byExecutionTime(Duration.ofMillis(timeout)))
 						.peek(statistics)
 						.collect(EvolutionResult.toBestPhenotype());
 
-				// System.out.println(statistics);
-				// System.out.println(found);
-				// System.out.println();
-				//
 				System.out.print(System.currentTimeMillis());
 				System.out.print("\t");
 				System.out.print(statistics.evaluationDuration().count());
@@ -484,7 +480,7 @@ public class Main {
 
 	public static void main(String[] args) {
 		// encog();
-		moea();
+		// moea();
 		jenetics();
 	}
 }
